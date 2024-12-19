@@ -42,8 +42,8 @@ JobKeywords/
 │   ├──analysis.py
 ├── data/
 │   ├──inputs.txt
-│   ├──ats_results.txt: All searched links
-│   ├──keywords.txt
+│   ├──links.txt: All searched links
+│   ├──keywords.csv
 │   ├──analysis.csv: Top 20 skill keywords, with count (% of job postings in which it appeared)
 
 

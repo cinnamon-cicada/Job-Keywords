@@ -12,6 +12,9 @@ def run_keyword_analyzer():
     env_input = format_input('.env')
     api_key, search_engine = env_input[0], env_input[1]
 
+    # Format criteria portion of query
+    criteria = make_google_format(search_terms, exclusions)
+
     # Comment out if necessary
     # nltk.download("punkt")
     # nltk.download("wordnet")
@@ -19,19 +22,9 @@ def run_keyword_analyzer():
 
     # 2. Visit each ATS site
     for link in ats_links:
-        # Format query
-        exclusion_str = ''
-        for ex in exclusions:
-            exclusion_str += f'-"{ex}" '
-
-        inclusion_str = '('
-        for term in search_terms:
-            inclusion_str += f'intext:"{term}" OR '
-        inclusion_str = inclusion_str[:-4]
-
         #TODO: check it's not cut too short
-        query = f'site:{link} {exclusion_str} {inclusion_str})'
-
+        query = f'site:{link} {criteria})'
+        
         # Run query
         job_links = []
         job_links.append(get_search_links(query, api_key, search_engine))
@@ -49,8 +42,13 @@ def run_keyword_analyzer():
         for link in links_arr:
             keyword_arrays.append(process_html(get_html(link)))
 
-        keywords_per_page = pd.DataFrame()
+        keywords_per_page = pd.DataFrame(keyword_arrays)
+        keywords_per_page.to_csv('data/keywords.csv') #TODO: delete; keywords saved to avoid excess scraping
 
-        # google.com: site:boards.greenhouse.io united states (intext:"Software Developer" OR intext:"Software Engineer")
+        # Get keyword count
+        keywords_df = pd.Series(keywords_per_page.values.ravel()).value_counts()
+        keywords_df.to_csv('data/analysis.csv') 
 
+
+# Call analyzing method
 run_keyword_analyzer()

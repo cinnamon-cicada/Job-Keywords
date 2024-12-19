@@ -134,7 +134,7 @@ def extract_skills_section(html, platform):
         return None
 
 
-def extract_keywords(raw_text):
+def extract_keywords(raw_text): #TODO: may need more filtration if too many keywords result.
     clean_text = re.sub(r"[^a-zA-Z\s]", "", raw_text).lower()
     tokens = word_tokenize(clean_text)
     
@@ -148,3 +148,16 @@ def extract_keywords(raw_text):
     
     # Return only unique keywords
     return set(lemmatized_words)
+
+def make_google_format(inclusions, exclusions):
+    exclusion_str = ''
+    for ex in exclusions:
+        exclusion_str += f'-"{ex}" '
+
+    inclusion_str = '('
+    for term in inclusions:
+        inclusion_str += f'intext:"{term}" OR '
+    inclusion_str = inclusion_str[:-4]
+    inclusion_str += ')'
+
+    return exclusion_str + inclusion_str
