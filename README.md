@@ -1,7 +1,7 @@
-# Job Keywords Analyzer
+# (Search) Keyword Analyzer
 
 ## About
-As a sophomore studying CS, I've been feeling lost as to what technologies I should focus on. Hence this app: a tool to find the top 20 skills mentioned in any job. Hope it helps all of us find some direction in our lives!
+There are a hundred different platforms out there, and a thousand different technologies. As an aspiring SWE, I have to ask: where do I begin? Where do any of us? Hence this app: a tool to find the top 20 skills mentioned in any job. 
 
 ## Setup
 1. Install libraries
@@ -10,14 +10,11 @@ pip install requests
 pip install numpy
 pip install selenium
 ```
+2. Get a Google Cloud Console project API key 
 
 ## Workflow
-0. Inputs: search keyword
-1. Selenium API: Retrieve ATS postings as links
-    1. ATS sites
-        1. lever, recruiterbox, greenhouse, success factors
-        2. logins: workday, iCIMS, taleo
-    2. "Click" each subsequent page
+0. Inputs: search keyword, API key
+1. Google Search Engine API: get first 
 2. Open URLs -> Get HTML
     1. BeautifulSoup?
 3. Clean HTML (More BeautifulSoup?)
