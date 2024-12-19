@@ -1,3 +1,4 @@
 site links: boards.greenhouse.io
-job: software developer, software developor, software engineer, swe
+keywords: software developer, software developor, software engineer, swe, united states
 search last X days: 7
+exclude: jobs, careers, roles

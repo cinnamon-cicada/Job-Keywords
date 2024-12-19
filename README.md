@@ -8,13 +8,19 @@ There are a hundred different platforms out there, and a thousand different tech
 ```
 pip install requests
 pip install numpy
-pip install selenium
+pip install pandas
+pip install google-api-python-client
+pip install beautifulsoup4
+pip install nltk
 ```
 2. Get a Google Cloud Console project API key 
 
 ## Workflow
 0. Inputs: search keyword, API key
 1. Google Search Engine API: get first 
+    1. ATS sites
+        1. lever, recruiterbox, greenhouse, success factors
+        2. with logins: workday.wd5.myworkdayjobs.com, icims.com, taleo.net
 2. Open URLs -> Get HTML
     1. BeautifulSoup?
 3. Clean HTML (More BeautifulSoup?)
