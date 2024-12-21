@@ -23,7 +23,7 @@ def run_keyword_analyzer():
     # 2. Visit each ATS site
     for link in ats_links:
         #TODO: check it's not cut too short
-        query = f'site:{link} {criteria})'
+        query = 'site: ' + link + ' ' + criteria
         
         # Run query
         job_links = []

@@ -7,8 +7,16 @@ from nltk.tokenize import word_tokenize
 from nltk.stem import WordNetLemmatizer
 import re
 
-
 def format_input(file):
+    """
+    Parses an input file and extracts formatted content.
+
+    Args:
+        file (str): Path to the input file.
+
+    Returns:
+        list: A list containing parsed inputs, each entry representing a line.
+    """
     formatted = []
 
     with open(file) as f:
@@ -16,55 +24,50 @@ def format_input(file):
             # More than one input
             if line.count(',') > 0:
                 formatted.append(line.split(': ')[1].split(','))
-                for item in formatted[-1]:
-                    item = item.strip()
+                for i in range(len(formatted[-1])):
+                    formatted[-1][i] = formatted[-1][i].strip()
             # One input
             else:
                 formatted.append(line.split(': ')[1])
 
-    # Return
     return formatted
 
 def get_search_links(query, api, engine, num_results=200):
-    
     """
+    Retrieves search result links using Google Custom Search API.
+
     Args:
         query (str): The search query.
-        instance (str): URL of the SearXNG instance (default: searx.be).
-        num_results (int): Number of search results to retrieve.
+        api (str): Google API key.
+        engine (str): Custom search engine ID.
+        num_results (int): Number of search results to retrieve (default: 200).
 
     Returns:
-        list: A list of search result links.
+        str: All retrieved search links as a concatenated string.
     """
     num_urls = 0
-    next_page_start = None
+    next_page_start = 1
     links = ""
 
-    query = urlencode(query)
-
-    # Create service to call Google Cloud APIs
     service = build(
         "customsearch", "v1", developerKey=api
     )
     
-    # Make requested number of API calls
     while num_urls < num_results:
         try:
             result = service.cse().list(
                 q=query,
                 cx=engine,
-                next=next_page_start
-            ).execute()
+                start=next_page_start
+            ).execute(http=requests.Session().get)
 
             for res in result.get('items', []):
                 num_urls += 1
                 links += res['link']
             
-            # TODO: delete; block used to minimize API calls during testing
-            with open("data/links.txt", "w") as f:
+            with open("data/links.txt", "a") as f:
                 f.write(links)
 
-            # Get next page of results
             next_page_start = result['queries'].get('nextPage', [{}])[0].get('startIndex', None)
 
         except requests.exceptions.RequestException as e:
@@ -73,59 +76,75 @@ def get_search_links(query, api, engine, num_results=200):
 
     return links
 
-    # TODO del: test search: https://www.google.com/search?q=swe+jobs+site%3Aboards.greenhouse.io+-%22jobs%22&sca_esv=32e55b09f5ce6c02&ei=MMdhZ8zqBu3a5NoP8Lj40A0&ved=0ahUKEwjMwvfMu6-KAxVtLVkFHXAcHtoQ4dUDCBA&uact=5&oq=swe+jobs+site%3Aboards.greenhouse.io+-%22jobs%22&gs_lp=Egxnd3Mtd2l6LXNlcnAiKnN3ZSBqb2JzIHNpdGU6Ym9hcmRzLmdyZWVuaG91c2UuaW8gLSJqb2JzIkjyGlDsBFjpGHABeACQAQCYAbMBoAHXBqoBAzUuM7gBA8gBAPgBAZgCAKACAJgDAIgGAZIHAKAH6AI&sclient=gws-wiz-serp
-
 def get_html(url, analyze_jobs=True):
+    """
+    Sends a GET request to a URL and parses the response HTML.
+
+    Args:
+        url (str): The webpage URL.
+        analyze_jobs (bool): Whether the goal is job analysis (default: True).
+
+    Returns:
+        BeautifulSoup object or str: Parsed HTML or an error message.
+    """
     try:
-        # Send an HTTP request to the URL
         headers = {'User-Agent': 'Mozilla/5.0'}
         response = requests.get(url, headers=headers)
-        response.raise_for_status()  # Check if the request was successful
+        response.raise_for_status()
 
-        # Parse the HTML content
-        bouillon = BeautifulSoup(response.text, 'html.parser')
-        return bouillon
+        return BeautifulSoup(response.text, 'html.parser')
     
     except requests.exceptions.RequestException as e:
         return f"An error occurred: {e}"
 
 def process_html(html, platform, analyze_jobs=True):
     """
-    Extract the skills/qualifications section based on platform-specific patterns.
-    html: Returned from BeautifulSoup()'s HTML parser ('html.parser')
-    platform: Link to requested platform
-    analyze_jobs: Whether or not the user goal is to get job skills keywords
+    Processes HTML content to extract relevant sections and keywords.
+
+    Args:
+        html (BeautifulSoup): Parsed HTML content.
+        platform (str): Platform link 
+        analyze_jobs (bool): Whether the goal is job keyword extraction.
+
+    Returns:
+        set: Extracted keywords, or None if no keywords found.
     """
     if analyze_jobs:
         section = extract_skills_section(html, platform)
         
-    # Clean skills section
     if section:
-        # Remove HTML tags
         section = section.get_text(strip=True, separator="\n")
-        section = extract_keywords(section)
+        return extract_keywords(section)
     else:
         print("'section' variable was empty.")
         return None
-    
-    
+
 def extract_skills_section(html, platform):
+    """
+    Extracts the skills/qualifications section from the HTML.
+
+    Args:
+        html (BeautifulSoup): Parsed HTML content.
+        platform (str): Job platform name.
+
+    Returns:
+        BeautifulSoup element or None: Extracted section, if found.
+    """
     try:
-        # Get skills section of page
         if "lever" in platform:
-            section = html.find("div", class_="section") or html.find("div", class_="posting-requirements")
+            return html.find("div", class_="section") or html.find("div", class_="posting-requirements")
         elif "trakstar" in platform:
-            section = html.find("div", class_="jobdesciption")
+            return html.find("div", class_="jobdesciption")
         elif "greenhouse" in platform:
-            section = html.find_all('li')
+            return html.find_all('li')
         elif "successfactors" in platform:
-            section = html.find("div", id="qualifications") or html.find("div", class_="job-qualifications")
+            return html.find("div", id="qualifications") or html.find("div", class_="job-qualifications")
         elif "workday" in platform:
-            section = html.find_all('li')
+            return html.find_all('li')
         elif "icims" in platform:
-            section = html.find("div", id="jobPageBody")
+            return html.find("div", id="jobPageBody")
         elif "taleo" in platform:
-            section = html.find("div", id="requisitionDescriptionInterface") or html.find("div", class_="requisitionDescription")
+            return html.find("div", id="requisitionDescriptionInterface") or html.find("div", class_="requisitionDescription")
         else:
             print(f"Platform '{platform}' not supported.")
             return None
@@ -133,31 +152,40 @@ def extract_skills_section(html, platform):
         print(f"Error extracting qualifications for {platform}: {e}")
         return None
 
+def extract_keywords(raw_text):
+    """
+    Extracts unique keywords from raw text by lemmatizing and removing stopwords.
 
-def extract_keywords(raw_text): #TODO: may need more filtration if too many keywords result.
+    Args:
+        raw_text (str): Text to process.
+
+    Returns:
+        set: A set of unique keywords.
+    """
     clean_text = re.sub(r"[^a-zA-Z\s]", "", raw_text).lower()
     tokens = word_tokenize(clean_text)
-    
-    # Remove stopwords
+
     stop_words = set(stopwords.words("english"))
     filtered_words = [word for word in tokens if word not in stop_words]
-    
-    # Lemmatize (convert to infinitive/base form)
+
     lemmatizer = WordNetLemmatizer()
     lemmatized_words = [lemmatizer.lemmatize(word) for word in filtered_words]
-    
-    # Return only unique keywords
+
     return set(lemmatized_words)
 
 def make_google_format(inclusions, exclusions):
-    exclusion_str = ''
-    for ex in exclusions:
-        exclusion_str += f'-"{ex}" '
+    """
+    Creates a formatted Google search query with inclusions and exclusions.
 
-    inclusion_str = '('
-    for term in inclusions:
-        inclusion_str += f'intext:"{term}" OR '
-    inclusion_str = inclusion_str[:-4]
-    inclusion_str += ')'
+    Args:
+        inclusions (list): List of required keywords.
+        exclusions (list): List of excluded keywords.
+
+    Returns:
+        str: Formatted search query string.
+    """
+    exclusion_str = ''.join(f'-"{ex}" ' for ex in exclusions)
+
+    inclusion_str = '(' + ' OR '.join(f'intext:"{term}"' for term in inclusions) + ')'
 
     return exclusion_str + inclusion_str

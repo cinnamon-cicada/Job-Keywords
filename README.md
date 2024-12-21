@@ -45,6 +45,7 @@ JobKeywords/
 │   ├──links.txt: All searched links
 │   ├──keywords.csv
 │   ├──analysis.csv: Top 20 skill keywords, with count (% of job postings in which it appeared)
+├── .env: Contains 1. Google services API Key and 2. Google custom search engine ID
 
 
 ## Technology
