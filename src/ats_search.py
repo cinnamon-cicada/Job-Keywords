@@ -28,7 +28,7 @@ def format_input(file):
                     formatted[-1][i] = formatted[-1][i].strip()
             # One input
             else:
-                formatted.append(line.split(': ')[1])
+                formatted.append(line.split(': ')[1].strip())
 
     return formatted
 
@@ -52,6 +52,12 @@ def get_search_links(query, api, engine, num_results=200):
     service = build(
         "customsearch", "v1", developerKey=api
     )
+
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36', 
+        'X-My-Application-ID': 'job-keywords-71', 
+        'Referer': 'https://www.google.com'
+    }
     
     while num_urls < num_results:
         try:
@@ -59,11 +65,11 @@ def get_search_links(query, api, engine, num_results=200):
                 q=query,
                 cx=engine,
                 start=next_page_start
-            ).execute(http=requests.Session().get)
+            ).execute()
 
             for res in result.get('items', []):
                 num_urls += 1
-                links += res['link']
+                links += res['link'] + '\n'
             
             with open("data/links.txt", "a") as f:
                 f.write(links)
@@ -173,19 +179,28 @@ def extract_keywords(raw_text):
 
     return set(lemmatized_words)
 
-def make_google_format(inclusions, exclusions):
+def make_google_format(search_terms, exclusions, inclusions):
     """
     Creates a formatted Google search query with inclusions and exclusions.
 
     Args:
-        inclusions (list): List of required keywords.
+        search_terms (list): List of keywords to search (mutual OR relationship).
         exclusions (list): List of excluded keywords.
+        inclusions (list): List of required keywords.
 
     Returns:
         str: Formatted search query string.
     """
-    exclusion_str = ''.join(f'-"{ex}" ' for ex in exclusions)
+    if type(exclusions) is list:
+        exclusion_str = ''.join(f'-"{ex}" ' for ex in exclusions)
+    else:
+        exclusion_str = f'-"{exclusions}"'
 
-    inclusion_str = '(' + ' OR '.join(f'intext:"{term}"' for term in inclusions) + ')'
+    if type(inclusions) is list:
+        inclusion_str = ' '.join(inclusions)
+    else:
+        inclusion_str = inclusions
 
-    return exclusion_str + inclusion_str
+    search_term_str = '(' + ' OR '.join(f'contains:{term}' for term in search_terms) + ')'
+
+    return ' '.join([exclusion_str, inclusion_str, search_term_str])

@@ -5,15 +5,18 @@ import pandas as pd
 import nltk
 
 def run_keyword_analyzer():
-    # 1. Get inputs
+    # 1. Get and format inputs
     user_input = format_input('data/inputs.txt')
-    ats_links, search_terms, days, exclusions = user_input[0], user_input[1], user_input[2], user_input[3]
+    ats_links, search_terms, days, exclusions, inclusions = user_input[0], user_input[1], user_input[2], user_input[3], user_input[4]
+    
+    if type(ats_links) is not list:
+        ats_links = [ats_links]
 
     env_input = format_input('.env')
     api_key, search_engine = env_input[0], env_input[1]
 
     # Format criteria portion of query
-    criteria = make_google_format(search_terms, exclusions)
+    criteria = make_google_format(search_terms, exclusions, inclusions)
 
     # Comment out if necessary
     # nltk.download("punkt")
@@ -23,7 +26,7 @@ def run_keyword_analyzer():
     # 2. Visit each ATS site
     for link in ats_links:
         #TODO: check it's not cut too short
-        query = 'site: ' + link + ' ' + criteria
+        query = 'site:' + link + ' ' + criteria
         
         # Run query
         job_links = []
@@ -35,7 +38,7 @@ def run_keyword_analyzer():
         # Put links into an array
         links_arr = []
         for line in file:
-            links_arr = line.split(' ')
+            links_arr = line.split('\n')
 
         # Get unique keywords from each visited page
         keyword_arrays = [set()]
