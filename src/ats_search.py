@@ -1,11 +1,13 @@
 import requests
 from urllib.parse import urlencode, urljoin
-from googleapiclient.discovery import build
 from bs4 import BeautifulSoup
 from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
 from nltk.stem import WordNetLemmatizer
 import re
+import time
+# from googleapiclient.discovery import build
+import json
 
 def format_input(file):
     """
@@ -32,52 +34,59 @@ def format_input(file):
 
     return formatted
 
-def get_search_links(query, api, engine, num_results=200):
+def get_search_links(query, api, endpoint = '', num_results=200):
     """
     Retrieves search result links using Google Custom Search API.
 
     Args:
         query (str): The search query.
         api (str): Google API key.
-        engine (str): Custom search engine ID.
+        endpoint (str): Custom search engine ID.
         num_results (int): Number of search results to retrieve (default: 200).
 
     Returns:
         str: All retrieved search links as a concatenated string.
     """
     num_urls = 0
-    next_page_start = 1
-    links = ""
-
-    service = build(
-        "customsearch", "v1", developerKey=api
-    )
+    next_page_start = 0
+    links = ''
+    limit_reached = False
 
     headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36', 
         'X-My-Application-ID': 'job-keywords-71', 
-        'Referer': 'https://www.google.com'
+        'Referer': 'https://www.google.com',
+        'Ocp-Apim-Subscription-Key': api
     }
-    
-    while num_urls < num_results:
-        try:
-            result = service.cse().list(
-                q=query,
-                cx=engine,
-                start=next_page_start
-            ).execute()
+    endpoint += '/v7.0/search'
 
-            for res in result.get('items', []):
+    while num_urls < num_results and not limit_reached:
+        params = {
+                "q": query,
+                "count": 50,          # Number of results per request
+                "offset": next_page_start,          # Pagination offset
+                "mkt": "en-US",       # Market/language
+                "responseFilter": "Webpages"
+            }
+
+        try:
+            result = requests.get(endpoint, headers=headers, params=params)
+            for res in result['webPages']['value']:
                 num_urls += 1
-                links += res['link'] + '\n'
+                links += res['url'] + '\n'
             
             with open("data/links.txt", "a") as f:
                 f.write(links)
 
-            next_page_start = result['queries'].get('nextPage', [{}])[0].get('startIndex', None)
+            next_page_start += min(50, result['webPages']['totalEstimatedMatches'] - next_page_start)
+            # No more possible matches
+            if next_page_start != 50:
+                limit_reached = True
 
-        except requests.exceptions.RequestException as e:
-            print(f"Error: {e}")
+            time.sleep(0.333)
+
+        except:
+            print(f"Error occurred during API call.")
             pass
 
     return links
@@ -201,6 +210,10 @@ def make_google_format(search_terms, exclusions, inclusions):
     else:
         inclusion_str = inclusions
 
-    search_term_str = '(' + ' OR '.join(f'contains:{term}' for term in search_terms) + ')'
+    search_term_str = '("' + '" OR "'.join(f'contains:{term}' for term in search_terms) + '")'
+    # search_term_str = ' '.join(search_terms)
+    search_term_str += ' responseFilter=Webpages'
 
     return ' '.join([exclusion_str, inclusion_str, search_term_str])
+
+# site:job-boards.greenhouse.io ("swe" OR "software")  -"careers" -"roles" -jobs responseFilter=Webpages

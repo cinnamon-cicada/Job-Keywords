@@ -5,7 +5,7 @@ import pandas as pd
 import nltk
 
 def run_keyword_analyzer():
-    # 1. Get and format inputs
+    # 1. Get inputs
     user_input = format_input('data/inputs.txt')
     ats_links, search_terms, days, exclusions, inclusions = user_input[0], user_input[1], user_input[2], user_input[3], user_input[4]
     
