@@ -51,6 +51,7 @@ def get_search_links(query, api, endpoint = '', num_results=200):
     next_page_start = 0
     links = ''
     limit_reached = False
+    query = urlencode(query)
 
     headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36', 
