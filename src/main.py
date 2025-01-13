@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 import nltk
 
-def run_keyword_analyzer():
+def run_keyword_analyzer(): 
     # 1. Get inputs
     user_input = format_input('data/inputs.txt')
     ats_links, search_terms, days, exclusions, inclusions = user_input[0], user_input[1], user_input[2], user_input[3], user_input[4]
@@ -31,7 +31,7 @@ def run_keyword_analyzer():
         
         # Run query
         job_links = []
-        job_links.append(api.get_search_links(query, api_key, search_engine))
+        job_links.append(api.get_search_links(query, api_key, search_engine, engine_id))
         print("Done.")
 
     # 3. Visit each result link

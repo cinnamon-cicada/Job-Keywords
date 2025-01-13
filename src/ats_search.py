@@ -70,14 +70,15 @@ class google_search():
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36', 
             'X-My-Application-ID': 'job-keywords-71', 
             'Referer': 'https://www.google.com'
-        }
+        } #TODO: may be unnecessary
         
         while num_urls < num_results:
-            result = service.cse().list(
-                q=query,
-                cx=engine,
-                start=next_page_start
-            ).execute(http=requests.Session().get)
+            try:
+                result = service.cse().list(
+                    q=query,
+                    cx=engine,
+                    start=next_page_start
+                ).execute(http=requests.Session().get)
 
                 for res in result.get('items', []):
                     num_urls += 1
@@ -214,7 +215,6 @@ class google_search():
             inclusion_str = inclusions
 
         search_term_str = '("' + '" OR "'.join(f'contains:{term}' for term in search_terms) + '")'
-        search_term_str += ' responseFilter=Webpages'
 
         return ' '.join([exclusion_str, inclusion_str, search_term_str])
 
@@ -222,7 +222,7 @@ class bing_search():
     def __init__(self):
         pass
 
-    def get_search_links(query, api, endpoint = '', num_results=200):
+    def get_search_links(query, api, endpoint = '', engine_id = '', num_results=200):
         """
         Retrieves search result links using Google Custom Search API.
 
