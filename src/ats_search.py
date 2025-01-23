@@ -30,22 +30,24 @@ def format_input(file):
 
     with open(file) as f:
         for line in f:
-            # More than one input
-            if line.count(',') > 0:
-                formatted.append(line.split(': ')[1].split(','))
-                for i in range(len(formatted[-1])):
-                    formatted[-1][i] = formatted[-1][i].strip()
-            # One input
-            else:
-                formatted.append(line.split(': ')[1].strip())
+            if line[0] != '#':
+                # More than one input
+                if line.count(',') > 0:
+                    formatted.append(line.split(': ')[1].split(','))
+                    for i in range(len(formatted[-1])):
+                        formatted[-1][i] = formatted[-1][i].strip()
+                # One input
+                else:
+                    formatted.append(line.split(': ')[1].strip())
 
     return formatted
 
+# Google API-dependent functions
 class google_search():
     def __init__(self):
         pass
 
-    def get_search_links(query, api, engine = '', engine_id = '', num_results=200):
+    def get_search_links(self, query, api, engine = '', engine_id = '', num_results=200):
         """
         Retrieves search result links using Google Custom Search API.
 
@@ -95,7 +97,7 @@ class google_search():
 
         return links
 
-    def get_html(url, analyze_jobs=True):
+    def get_html(self, url, analyze_jobs=True): #TODO: not linking?
         """
         Sends a GET request to a URL and parses the response HTML.
 
@@ -116,7 +118,7 @@ class google_search():
         except requests.exceptions.RequestException as e:
             return f"An error occurred: {e}"
 
-    def process_html(html, platform, analyze_jobs=True):
+    def process_html(self, html, platform, analyze_jobs=True):
         """
         Processes HTML content to extract relevant sections and keywords.
 
@@ -129,16 +131,16 @@ class google_search():
             set: Extracted keywords, or None if no keywords found.
         """
         if analyze_jobs:
-            section = extract_skills_section(html, platform)
+            section = self.extract_skills_section(html, platform)
             
         if section:
             section = section.get_text(strip=True, separator="\n")
-            return extract_keywords(section)
+            return self.extract_keywords(section)
         else:
             print("'section' variable was empty.")
             return None
 
-    def extract_skills_section(html, platform):
+    def extract_skills_section(self, html, platform):
         """
         Extracts the skills/qualifications section from the HTML.
 
@@ -171,7 +173,7 @@ class google_search():
             print(f"Error extracting qualifications for {platform}: {e}")
             return None
 
-    def extract_keywords(raw_text):
+    def extract_keywords(self, raw_text):
         """
         Extracts unique keywords from raw text by lemmatizing and removing stopwords.
 
@@ -192,7 +194,7 @@ class google_search():
 
         return set(lemmatized_words)
 
-    def make_api_format(search_terms, exclusions, inclusions):
+    def make_api_format(self, search_terms, exclusions, inclusions):
         """
         Creates a formatted Google search query with inclusions and exclusions.
 
@@ -222,7 +224,7 @@ class bing_search():
     def __init__(self):
         pass
 
-    def get_search_links(query, api, endpoint = '', engine_id = '', num_results=200):
+    def get_search_links(self, query, api, endpoint = '', engine_id = '', num_results=200):
         """
         Retrieves search result links using Google Custom Search API.
 
@@ -280,7 +282,7 @@ class bing_search():
 
         return links
 
-    def get_html(url, analyze_jobs=True):
+    def get_html(self, url, analyze_jobs=True):
         """
         Sends a GET request to a URL and parses the response HTML.
 
@@ -301,7 +303,7 @@ class bing_search():
         except requests.exceptions.RequestException as e:
             return f"An error occurred: {e}"
 
-    def extract_skills_section(html, platform):
+    def extract_skills_section(self, html, platform):
         """
         Extracts the skills/qualifications section from the HTML.
 
@@ -334,7 +336,7 @@ class bing_search():
             print(f"Error extracting qualifications for {platform}: {e}")
             return None
 
-    def extract_keywords(raw_text):
+    def extract_keywords(self, raw_text):
         """
         Extracts unique keywords from raw text by lemmatizing and removing stopwords.
 
@@ -355,7 +357,7 @@ class bing_search():
 
         return set(lemmatized_words)
 
-    def make_api_format(search_terms, exclusions, inclusions):
+    def make_api_format(self, search_terms, exclusions, inclusions):
         """
         Creates a formatted Google search query with inclusions and exclusions.
 
@@ -383,7 +385,7 @@ class bing_search():
 
         return ' '.join([exclusion_str, inclusion_str, search_term_str])
 
-    def process_html(html, platform, analyze_jobs=True):
+    def process_html(self, html, platform, analyze_jobs=True):
         """
         Processes HTML content to extract relevant sections and keywords.
 
@@ -396,11 +398,11 @@ class bing_search():
             set: Extracted keywords, or None if no keywords found.
         """
         if analyze_jobs:
-            section = extract_skills_section(html, platform)
+            section = self.extract_skills_section(html, platform)
             
         if section:
             section = section.get_text(strip=True, separator="\n")
-            return extract_keywords(section)
+            return self.extract_keywords(section)
         else:
             print("'section' variable was empty.")
             return None
