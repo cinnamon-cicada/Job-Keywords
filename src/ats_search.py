@@ -80,7 +80,7 @@ class google_search():
                     q=query,
                     cx=engine,
                     start=next_page_start
-                ).execute(http=requests.Session().get)
+                ).execute()
 
                 for res in result.get('items', []):
                     num_urls += 1
