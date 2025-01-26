@@ -78,7 +78,7 @@ class google_search():
             try:
                 result = service.cse().list(
                     q=query,
-                    cx=engine,
+                    cx=engine_id,
                     start=next_page_start
                 ).execute()
 

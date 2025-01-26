@@ -31,7 +31,7 @@ def run_keyword_analyzer():
         
         # Run query
         job_links = []
-        job_links.append(api.get_search_links(query, api_key, search_engine, engine_id, 30))
+        job_links.append(api.get_search_links(query, api_key, search_engine, engine_id, 10))
         print("Done.")
 
     # 3. Visit each result link
