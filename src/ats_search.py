@@ -82,11 +82,16 @@ class google_search():
                     start=next_page_start
                 ).execute()
 
+                if(result['searchInformation']['totalResults'] == '0') {
+                    print("Not enough results");
+                    break;
+                }
+
                 for res in result.get('items', []):
                     num_urls += 1
                     links += res['link'] + '\n'
                 
-                with open("data/links.txt", "a") as f:
+                with open("data/links.txt", "a") as f: # Add line, not overwrite
                     f.write(links)
 
                 next_page_start = result['queries'].get('nextPage', [{}])[0].get('startIndex', None)
