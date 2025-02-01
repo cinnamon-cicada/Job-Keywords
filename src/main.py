@@ -24,15 +24,14 @@ def run_keyword_analyzer():
     # nltk.download("wordnet")
     # nltk.download("stopwords")
 
-    # 2. Visit each ATS site
-    for link in ats_links:
-        #TODO: check it's not cut too short
-        query = 'site:' + link + ' ' + criteria
+    # # 2. Visit each ATS site
+    # for link in ats_links:
+    #     #TODO: check it's not cut too short
+    #     query = 'site:' + link + ' ' + criteria
         
-        # Run query
-        job_links = []
-        job_links.append(api.get_search_links(query, api_key, search_engine, engine_id, 10))
-        print("Done.")
+    #     # Run query
+    #     api.get_search_links(query, api_key, search_engine, engine_id, 10)
+    #     print("Done.")
 
     # 3. Visit each result link
     with open('data/links.txt') as file:
@@ -44,7 +43,7 @@ def run_keyword_analyzer():
         # Get unique keywords from each visited page
         keyword_arrays = [set()]
         for link in links_arr:
-            keyword_arrays.append(api.process_html(api.get_html(link)))
+            keyword_arrays.append(api.process_html(api.get_html(link), platform=link))
 
         keywords_per_page = pd.DataFrame(keyword_arrays)
         keywords_per_page.to_csv('data/keywords.csv') #TODO: delete; keywords saved to avoid excess scraping

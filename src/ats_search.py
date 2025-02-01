@@ -82,10 +82,12 @@ class google_search():
                     start=next_page_start
                 ).execute()
 
-                if(result['searchInformation']['totalResults'] == '0') {
-                    print("Not enough results");
-                    break;
-                }
+                if(result['searchInformation']['totalResults'] == '0'):
+                    print("Not enough results")
+                    with open("data/links.txt", "a") as f: # Add line, not overwrite
+                        f.write("Not enough results after " + str(num_urls) + " links")
+                    break
+                
 
                 for res in result.get('items', []):
                     num_urls += 1
@@ -221,7 +223,7 @@ class google_search():
         else:
             inclusion_str = inclusions
 
-        search_term_str = '("' + '" OR "'.join(f'contains:{term}' for term in search_terms) + '")'
+        search_term_str = '("' + '" OR "'.join(f'{term}' for term in search_terms) + '")'
 
         return ' '.join([exclusion_str, inclusion_str, search_term_str])
 
