@@ -21,7 +21,7 @@ def run_keyword_analyzer():
 
     # Comment out if necessary
     # nltk.download("punkt")
-    # nltk.download("wordnet")
+    nltk.download("wordnet")
     # nltk.download("stopwords")
 
     # # 2. Visit each ATS site

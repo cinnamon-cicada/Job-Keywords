@@ -141,8 +141,13 @@ class google_search():
             section = self.extract_skills_section(html, platform)
             
         if section:
-            section = section.get_text(strip=True, separator="\n")
-            return self.extract_keywords(section)
+            section_as_str = ''
+            if isinstance(section, list):
+                for str in section:
+                    section_as_str += str.contents[0] + ' '
+            else:
+                section_as_str = section.contents[0]
+            return self.extract_keywords(section_as_str)
         else:
             print("'section' variable was empty.")
             return None
