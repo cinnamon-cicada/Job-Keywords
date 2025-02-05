@@ -38,14 +38,14 @@ def run_keyword_analyzer():
         # Put links into an array
         links_arr = []
         for line in file:
-            links_arr = line.split('\n')
+            links_arr.append(line.strip())
 
         # Get unique keywords from each visited page
-        keyword_arrays = [set()]
+        keyword_arrays = []
         for link in links_arr:
             keyword_arrays.append(api.process_html(api.get_html(link), platform=link))
 
-        keywords_per_page = pd.DataFrame(keyword_arrays)
+        keywords_per_page = pd.DataFrame(keyword_arrays) # TODO: nonetype not iterable
         keywords_per_page.to_csv('data/keywords.csv') #TODO: delete; keywords saved to avoid excess scraping
 
         # Get keyword count

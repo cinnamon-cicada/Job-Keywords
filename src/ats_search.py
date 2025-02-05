@@ -144,12 +144,12 @@ class google_search():
             section_as_str = ''
             if isinstance(section, list):
                 for str in section:
-                    section_as_str += str.contents[0] + ' '
+                    section_as_str += str.contents[0].text + ' '
             else:
-                section_as_str = section.contents[0]
+                section_as_str = section.contents[0].text
             return self.extract_keywords(section_as_str)
         else:
-            print("'section' variable was empty.")
+            print("Input HTML section was empty.")
             return None
 
     def extract_skills_section(self, html, platform):
@@ -343,10 +343,10 @@ class bing_search():
                 return html.find("div", id="requisitionDescriptionInterface") or html.find("div", class_="requisitionDescription")
             else:
                 print(f"Platform '{platform}' not supported.")
-                return None
+                return ''
         except Exception as e:
             print(f"Error extracting qualifications for {platform}: {e}")
-            return None
+            return ''
 
     def extract_keywords(self, raw_text):
         """
