@@ -149,8 +149,8 @@ class google_search():
                 section_as_str = section.contents[0].text
             return self.extract_keywords(section_as_str)
         else:
-            print("Input HTML section was empty.")
-            return None
+            print("Input HTML section was empty for " + platform)
+            return [' ']
 
     def extract_skills_section(self, html, platform):
         """
