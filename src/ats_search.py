@@ -3,11 +3,14 @@ from urllib.parse import urlencode, urljoin
 from bs4 import BeautifulSoup
 from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
-from nltk.stem import WordNetLemmatizer
+from nltk.stem import wnLemmatizer
 import re
 import time
 from googleapiclient.discovery import build
-import json
+from nltk.corpus import wordnet as wn
+from itertools import product
+import numpy as np
+import pandas as pd
 
 # API-independent functions
 def search_wrapper(engine):
@@ -41,6 +44,17 @@ def format_input(file):
                     formatted.append(line.split(': ')[1].strip())
 
     return formatted
+
+# Filter words only for those related to topic_words
+# NOTE: wn similarity functions return !=0 ONLY for solid IS-A relationships
+def filter_keywords(df, n=5, topic_words = ['skill', 'technology', 'interpersonal skill'], similarity_threshold=0.2):
+    topic_syns = set(ss for word in topic_words for ss in wn.synsets(word))
+    # keyword_syns = set(ss for word in df.iloc[:, 0] for ss in wn.synsets(word)) # Add second level of comparison
+    keyword_syns = [x for x in df.iloc[:, 0] if x[0] > n] # Remove uncommon words
+    similarities = [(wn.wup_similarity(s1, s2) or 0, s1, s2) for s1, s2 in product(topic_syns, keyword_syns)] 
+    similarities = [x for x in similarities if x[0] > similarity_threshold] # Remove dissimilar words
+    similarities.sort(reverse=True, key=(lambda x: x[0])) # Sort by descending similarity
+    return pd.Series(similarities)
 
 # Google API-dependent functions
 class google_search():
@@ -201,7 +215,7 @@ class google_search():
         stop_words = set(stopwords.words("english"))
         filtered_words = [word for word in tokens if word not in stop_words]
 
-        lemmatizer = WordNetLemmatizer()
+        lemmatizer = wnLemmatizer()
         lemmatized_words = [lemmatizer.lemmatize(word) for word in filtered_words]
 
         return set(lemmatized_words)
@@ -364,7 +378,7 @@ class bing_search():
         stop_words = set(stopwords.words("english"))
         filtered_words = [word for word in tokens if word not in stop_words]
 
-        lemmatizer = WordNetLemmatizer()
+        lemmatizer = wnLemmatizer()
         lemmatized_words = [lemmatizer.lemmatize(word) for word in filtered_words]
 
         return set(lemmatized_words)

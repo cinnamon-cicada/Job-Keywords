@@ -3,6 +3,7 @@ from bs4 import BeautifulSoup
 import numpy as np
 import pandas as pd
 import nltk
+import os
 
 def run_keyword_analyzer(): 
     # 1. Get inputs
@@ -35,21 +36,28 @@ def run_keyword_analyzer():
 
     # 3. Visit each result link
     with open('data/links.txt') as file:
+        # Record number of links
+        n_links = 0
         # Put links into an array
         links_arr = []
         for line in file:
             links_arr.append(line.strip())
+            n_links += 1
 
         # Get unique keywords from each visited page
-        keyword_arrays = []
-        for link in links_arr:
-            keyword_arrays.append(api.process_html(api.get_html(link), platform=link))
+        keywords_csv = 'data/keywords.csv'
+        if(not(os.path.exists(keywords_csv))):
+            keyword_arrays = []
+            for link in links_arr:
+                keyword_arrays.append(api.process_html(api.get_html(link), platform=link))
 
-        keywords_per_page = pd.DataFrame(keyword_arrays) # TODO: nonetype not iterable
-        keywords_per_page.to_csv('data/keywords.csv') #TODO: delete; keywords saved to avoid excess scraping
+            keywords_per_page = pd.DataFrame(keyword_arrays) # TODO: nonetype not iterable
+            keywords_per_page.to_csv(keywords_csv) #TODO: delete; keywords saved to avoid excess scraping
 
         # Get keyword count
+        keywords_per_page = pd.read_csv(keywords_csv)
         keywords_df = pd.Series(keywords_per_page.values.ravel()).value_counts()
+        keywords_df = filter_keywords(keywords_df, n_links/5)
         keywords_df.to_csv('data/analysis.csv') 
 
 
