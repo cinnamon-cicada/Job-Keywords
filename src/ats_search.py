@@ -3,14 +3,16 @@ from urllib.parse import urlencode, urljoin
 from bs4 import BeautifulSoup
 from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
-from nltk.stem import wnLemmatizer
 import re
 import time
+import os
 from googleapiclient.discovery import build
-from nltk.corpus import wordnet as wn
 from itertools import product
 import numpy as np
 import pandas as pd
+from sentence_transformers import SentenceTransformer, util # pip install -U sentence-transformers
+
+from main import run_keyword_analyzer
 
 # API-independent functions
 def search_wrapper(engine):
@@ -47,14 +49,31 @@ def format_input(file):
 
 # Filter words only for those related to topic_words
 # NOTE: wn similarity functions return !=0 ONLY for solid IS-A relationships
-def filter_keywords(df, n=5, topic_words = ['skill', 'technology', 'interpersonal skill'], similarity_threshold=0.2):
-    topic_syns = set(ss for word in topic_words for ss in wn.synsets(word))
-    # keyword_syns = set(ss for word in df.iloc[:, 0] for ss in wn.synsets(word)) # Add second level of comparison
-    keyword_syns = [x for x in df.iloc[:, 0] if x[0] > n] # Remove uncommon words
-    similarities = [(wn.wup_similarity(s1, s2) or 0, s1, s2) for s1, s2 in product(topic_syns, keyword_syns)] 
-    similarities = [x for x in similarities if x[0] > similarity_threshold] # Remove dissimilar words
-    similarities.sort(reverse=True, key=(lambda x: x[0])) # Sort by descending similarity
-    return pd.Series(similarities)
+
+'''Alternative ideas:
+- Exclude keywords found in non-CS job descriptions + TF-IDF
+- word embedding library/methods -- what's so different between that and the below??
+
+'''
+
+def filter_keywords(df, df_compare, n=5, topic_words = ['coding', 'programming language', 'computer science', 'software', 'hardware', 'agile'], sim_threshold=0.4):
+    df[df.columns[1]] = df[df.columns[1]].astype(int)
+    keyword_series = df[df.n > n].iloc[:, 0] # Remove uncommon words
+
+    # Get keywords to compare to + exclude
+    d = 'data/keywords_cmp.csv'
+    if(not(os.path.exists(d))):
+        a = 'data/inputs_cmp.txt'
+        b = '.env'
+        c = 'data/links_cmp.txt'
+        e = 'data/analysis_cmp.csv'
+        run_keyword_analyzer(a, b, c, d, e)
+    exclude_keywords = pd.read_csv(d)[0] # First column holds keywords; Second column holds counts
+    print(len(exclude_keywords), ' ', len(exclude_keywords.unique()), '; ', len(keyword_series), ' ', len(print(len(exclude_keywords), len(keyword_series.unique())))) # TODO: remove. Series + set length should be equal
+
+
+    # Sort by descending similarity
+    return pd.Series(filtered_words)
 
 # Google API-dependent functions
 class google_search():

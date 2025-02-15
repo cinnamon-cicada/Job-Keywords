@@ -5,15 +5,21 @@ import pandas as pd
 import nltk
 import os
 
-def run_keyword_analyzer(): 
+a = 'data/inputs.txt'
+b = '.env'
+c = 'data/links.txt'
+d = 'data/keywords.csv'
+e = 'data/analysis.csv'
+
+def run_keyword_analyzer(api_input = a, env_input = b, links_to_visit = c, keywords_out = d, analysis_out = e): 
     # 1. Get inputs
-    user_input = format_input('data/inputs.txt')
+    user_input = format_input(api_input)
     ats_links, search_terms, days, exclusions, inclusions = user_input[0], user_input[1], user_input[2], user_input[3], user_input[4]
 
     if type(ats_links) is not list:
         ats_links = [ats_links]
 
-    env_input = format_input('.env')
+    env_input = format_input(env_input)
     api_key, search_engine, engine_id = env_input[0], env_input[1], env_input[2]
     api = search_wrapper(search_engine)
 
@@ -35,7 +41,7 @@ def run_keyword_analyzer():
     #     print("Done.")
 
     # 3. Visit each result link
-    with open('data/links.txt') as file:
+    with open(links_to_visit) as file:
         # Record number of links
         n_links = 0
         # Put links into an array
@@ -45,7 +51,7 @@ def run_keyword_analyzer():
             n_links += 1
 
         # Get unique keywords from each visited page
-        keywords_csv = 'data/keywords.csv'
+        keywords_csv = keywords_out
         if(not(os.path.exists(keywords_csv))):
             keyword_arrays = []
             for link in links_arr:
@@ -57,9 +63,9 @@ def run_keyword_analyzer():
         # Get keyword count
         keywords_per_page = pd.read_csv(keywords_csv)
         keywords_df = pd.Series(keywords_per_page.values.ravel()).value_counts()
+        keywords_df = pd.DataFrame({'word': keywords_df.index, 'n': keywords_df.values})
         keywords_df = filter_keywords(keywords_df, n_links/5)
-        keywords_df.to_csv('data/analysis.csv') 
-
+        keywords_df.to_csv(analysis_out) 
 
 # Call analyzing method
 run_keyword_analyzer()
