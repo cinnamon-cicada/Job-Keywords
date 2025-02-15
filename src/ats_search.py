@@ -1,79 +1,20 @@
 import requests
-from urllib.parse import urlencode, urljoin
+from urllib.parse import urlencode
 from bs4 import BeautifulSoup
 from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
 import re
 import time
-import os
 from googleapiclient.discovery import build
-from itertools import product
-import numpy as np
-import pandas as pd
 from sentence_transformers import SentenceTransformer, util # pip install -U sentence-transformers
 
-from main import run_keyword_analyzer
-
-# API-independent functions
+# API-dependent functions
+# Return correct search object for respective engine
 def search_wrapper(engine):
     if 'bing' in engine:
         return bing_search()
     else: 
         return google_search()
-    
-def format_input(file):
-    """
-    Parses an input file and extracts formatted content.
-
-    Args:
-        file (str): Path to the input file.
-
-    Returns:
-        list: A list containing parsed inputs, each entry representing a line.
-    """
-    formatted = []
-
-    with open(file) as f:
-        for line in f:
-            if line[0] != '#':
-                # More than one input
-                if line.count(',') > 0:
-                    formatted.append(line.split(': ')[1].split(','))
-                    for i in range(len(formatted[-1])):
-                        formatted[-1][i] = formatted[-1][i].strip()
-                # One input
-                else:
-                    formatted.append(line.split(': ')[1].strip())
-
-    return formatted
-
-# Filter words only for those related to topic_words
-# NOTE: wn similarity functions return !=0 ONLY for solid IS-A relationships
-
-'''Alternative ideas:
-- Exclude keywords found in non-CS job descriptions + TF-IDF
-- word embedding library/methods -- what's so different between that and the below??
-
-'''
-
-def filter_keywords(df, df_compare, n=5, topic_words = ['coding', 'programming language', 'computer science', 'software', 'hardware', 'agile'], sim_threshold=0.4):
-    df[df.columns[1]] = df[df.columns[1]].astype(int)
-    keyword_series = df[df.n > n].iloc[:, 0] # Remove uncommon words
-
-    # Get keywords to compare to + exclude
-    d = 'data/keywords_cmp.csv'
-    if(not(os.path.exists(d))):
-        a = 'data/inputs_cmp.txt'
-        b = '.env'
-        c = 'data/links_cmp.txt'
-        e = 'data/analysis_cmp.csv'
-        run_keyword_analyzer(a, b, c, d, e)
-    exclude_keywords = pd.read_csv(d)[0] # First column holds keywords; Second column holds counts
-    print(len(exclude_keywords), ' ', len(exclude_keywords.unique()), '; ', len(keyword_series), ' ', len(print(len(exclude_keywords), len(keyword_series.unique())))) # TODO: remove. Series + set length should be equal
-
-
-    # Sort by descending similarity
-    return pd.Series(filtered_words)
 
 # Google API-dependent functions
 class google_search():
