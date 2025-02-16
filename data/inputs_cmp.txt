@@ -1,0 +1,5 @@
+site links: boards.greenhouse.io
+keywords: finance, accounting, intern
+search last X days: 7
+exclude: jobs, careers, roles
+required keywords: united states

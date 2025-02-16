@@ -49,12 +49,12 @@ def filter_keywords(df, df_compare, n=5, topic_words = ['coding', 'programming l
     keywords = df[df.n > n].iloc[:, 0] # Remove uncommon words
 
     # Get keywords to compare to + exclude
-    e = 'data/analysis_cmp.csv'
+    e = './data/analysis_cmp.csv'
     if(not(os.path.exists(e))):
-        a = 'data/inputs_cmp.txt'
-        b = '.env'
-        c = 'data/links_cmp.txt'
-        d = 'data/keywords_cmp.csv'
+        a = './data/inputs_cmp.txt'
+        b = './.env'
+        c = './data/links_cmp.txt'
+        d = './data/keywords_cmp.csv'
         run_keyword_analyzer(a, b, c, d, e)
     exclude_keywords = pd.read_csv(d)[0]     # First column holds keywords; Second column holds counts
     print(len(exclude_keywords), ' ', len(exclude_keywords.unique()), '; ', len(keywords), ' ', len(keywords.unique())) # TODO: remove. Series + set length should be equal
@@ -71,7 +71,7 @@ def filter_keywords(df, df_compare, n=5, topic_words = ['coding', 'programming l
     return df
 
 # Define main analyzer method
-def run_keyword_analyzer(api_input = 'data/inputs.txt', env_input = '.env', links_to_visit = 'data/links.txt', keywords_out = 'data/keywords.csv', analysis_out = 'data/analysis.csv', num_links=10): 
+def run_keyword_analyzer(api_input = './data/inputs.txt', env_input = './.env', links_to_visit = './data/links.txt', keywords_out = './data/keywords.csv', analysis_out = './data/analysis.csv', num_links=10): 
     # 1. Get inputs
     user_input = format_input(api_input)
     ats_links, search_terms, days, exclusions, inclusions = user_input[0], user_input[1], user_input[2], user_input[3], user_input[4]
@@ -88,17 +88,18 @@ def run_keyword_analyzer(api_input = 'data/inputs.txt', env_input = '.env', link
 
     # Comment out if necessary
     # nltk.download("punkt")
-    nltk.download("wordnet")
+    # nltk.download("wordnet")
     # nltk.download("stopwords")
 
     # # 2. Visit each ATS site
-    # for link in ats_links:
-    #     #TODO: check it's not cut too short
-    #     query = 'site:' + link + ' ' + criteria
-        
-    #     # Run query
-    #     api.get_search_links(query, api_key, search_engine, engine_id, num_links)
-    #     print("Done.")
+    if(not(os.path.exists(links_to_visit))):
+        for link in ats_links:
+            #TODO: check it's not cut too short
+            query = 'site:' + link + ' ' + criteria
+            
+            # Run query
+            api.get_search_links(query, api_key, links_to_visit, search_engine, engine_id, num_links)
+            print("Done.")
 
     # 3. Visit each result link
     with open(links_to_visit) as file:

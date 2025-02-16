@@ -21,7 +21,7 @@ class google_search():
     def __init__(self):
         pass
 
-    def get_search_links(self, query, api, engine = '', engine_id = '', num_results=200):
+    def get_search_links(self, query, api, target_file, engine = '', engine_id = '', num_results=200):
         """
         Retrieves search result links using Google Custom Search API.
 
@@ -67,7 +67,7 @@ class google_search():
                     num_urls += 1
                     links += res['link'] + '\n'
                 
-                with open("data/links.txt", "a") as f: # Add line, not overwrite
+                with open(target_file, "a") as f: # Add line, not overwrite
                     f.write(links)
 
                 next_page_start = result['queries'].get('nextPage', [{}])[0].get('startIndex', None)
@@ -210,7 +210,7 @@ class bing_search():
     def __init__(self):
         pass
 
-    def get_search_links(self, query, api, endpoint = '', engine_id = '', num_results=200):
+    def get_search_links(self, query, api, target_file, endpoint = '', engine_id = '', num_results=200):
         """
         Retrieves search result links using Google Custom Search API.
 
@@ -252,7 +252,7 @@ class bing_search():
                     num_urls += 1
                     links += res['url'] + '\n'
                 
-                with open("data/links.txt", "a") as f:
+                with open(target_file, "a") as f:
                     f.write(links)
 
                 next_page_start += min(50, result['webPages']['totalEstimatedMatches'] - next_page_start)
