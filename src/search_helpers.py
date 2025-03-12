@@ -56,15 +56,15 @@ def filter_keywords(df, df_compare, n=5, topic_words = ['coding', 'programming l
         c = './data/links_cmp.txt'
         d = './data/keywords_cmp.csv'
         run_keyword_analyzer(a, b, c, d, e)
-    exclude_keywords = pd.read_csv(d)[0]     # First column holds keywords; Second column holds counts
+    exclude_keywords = pd.read_csv(e)['word']     # First column holds keywords; Second column holds counts
     print(len(exclude_keywords), ' ', len(exclude_keywords.unique()), '; ', len(keywords), ' ', len(keywords.unique())) # TODO: remove. Series + set length should be equal
-    exclude_keywords = exclude_keywords.unique()
-    keywords = keywords.unique()
+    exclude_keywords = set(exclude_keywords.unique())
+    keywords = set(keywords.unique())
 
     # Exclude non-target keywords
     # TODO: try tf-idf
     kept_keywords = keywords - exclude_keywords
-    df = df[df.iloc(0) in kept_keywords]
+    df = df[df.word.isin(kept_keywords)]
     df.sort_values(by='n', ascending=False)
 
     # Sort by descending similarity
@@ -90,6 +90,7 @@ def run_keyword_analyzer(api_input = './data/inputs.txt', env_input = './.env', 
     # nltk.download("punkt")
     # nltk.download("wordnet")
     # nltk.download("stopwords")
+    nltk.download('averaged_perceptron_tagger_eng')
 
     # # 2. Visit each ATS site
     if(not(os.path.exists(links_to_visit))):
@@ -118,12 +119,13 @@ def run_keyword_analyzer(api_input = './data/inputs.txt', env_input = './.env', 
             for link in links_arr:
                 keyword_arrays.append(api.process_html(api.get_html(link), platform=link))
 
-            keywords_per_page = pd.DataFrame(keyword_arrays) # TODO: nonetype not iterable
+            keywords_per_page = pd.DataFrame(keyword_arrays) # TODO: nonetype not iterable; May need to delete first column
             keywords_per_page.to_csv(keywords_csv) #TODO: delete; keywords saved to avoid excess scraping
 
         # Get keyword count
-        keywords_per_page = pd.read_csv(keywords_csv)
+        keywords_per_page = pd.read_csv(keywords_csv) #TODO (!!): inf recursion depth?
         keywords_df = pd.Series(keywords_per_page.values.ravel()).value_counts()
         keywords_df = pd.DataFrame({'word': keywords_df.index, 'n': keywords_df.values})
-        keywords_df = filter_keywords(keywords_df, n_links/5)
+        if not 'cmp' in api_input:
+            keywords_df = filter_keywords(keywords_df, n_links/5)
         keywords_df.to_csv(analysis_out) 

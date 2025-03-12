@@ -3,10 +3,12 @@ from urllib.parse import urlencode
 from bs4 import BeautifulSoup
 from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
+from nltk.tag import pos_tag
 import re
 import time
 from googleapiclient.discovery import build
 from sentence_transformers import SentenceTransformer, util # pip install -U sentence-transformers
+from nltk.stem import WordNetLemmatizer as wnLemmatizer
 
 # API-dependent functions
 # Return correct search object for respective engine
@@ -170,15 +172,30 @@ class google_search():
             set: A set of unique keywords.
         """
         clean_text = re.sub(r"[^a-zA-Z\s]", "", raw_text).lower()
-        tokens = word_tokenize(clean_text)
+        tokens = pos_tag(word_tokenize(clean_text))
 
+        # Remove stop words
         stop_words = set(stopwords.words("english"))
-        filtered_words = [word for word in tokens if word not in stop_words]
+        filtered_words = [pair for pair in tokens if pair[0] not in stop_words]
 
+        # Lemmatize
         lemmatizer = wnLemmatizer()
-        lemmatized_words = [lemmatizer.lemmatize(word) for word in filtered_words]
-
-        return set(lemmatized_words)
+        def apply_tag(word, tag):
+            wntag = tag[0].lower()
+            wntag = wntag if wntag in ['a', 'r', 'n', 'v'] else None
+            if not wntag:
+                lemma = word
+            elif wntag == 'a': # Remove adjectives
+                lemma = ''
+            else:
+                lemma = lemmatizer.lemmatize(word, wntag)
+            return lemma
+        lemmatized_words = [apply_tag(word, tag) for word, tag in filtered_words]
+        lemmatized_words = set(lemmatized_words)
+        lemmatized_words.discard('')
+        lemmatized_words.discard(' ')
+        
+        return lemmatized_words
 
     def make_api_format(self, search_terms, exclusions, inclusions):
         """
