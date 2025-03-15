@@ -64,12 +64,11 @@ class google_search():
                         f.write("Not enough results after " + str(num_urls) + " links")
                     break
                 
-
                 for res in result.get('items', []):
                     num_urls += 1
                     links += res['link'] + '\n'
                 
-                with open(target_file, "a") as f: # Add line, not overwrite
+                with open(target_file, "w") as f: # Create fresh links file for each run
                     f.write(links)
 
                 next_page_start = result['queries'].get('nextPage', [{}])[0].get('startIndex', None)
@@ -139,17 +138,30 @@ class google_search():
         Returns:
             BeautifulSoup element or None: Extracted section, if found.
         """
+        keywords = ['qualification', 'requirement', 'skill', 'what we look for', "work on", "working on"]
         try:
             if "lever" in platform:
                 return html.find("div", class_="section") or html.find("div", class_="posting-requirements")
             elif "trakstar" in platform:
                 return html.find("div", class_="jobdesciption")
             elif "greenhouse" in platform:
-                return html.find_all('li')
+                initial_find = html.find_all('ul')
+                matches = [ul for ul in initial_find if ul.find_previous_sibling(string=lambda t: any(keyword.lower() in t.lower() if t else False for keyword in keywords))]
+                # Extract all <li> elements from matched <ul>s
+                all_lis = []
+                for ul in matches:
+                    all_lis.extend(ul.find_all('li'))
+                return all_lis
             elif "successfactors" in platform:
                 return html.find("div", id="qualifications") or html.find("div", class_="job-qualifications")
             elif "workday" in platform:
-                return html.find_all('li')
+                initial_find = html.find_all('ul')
+                matches = [ul for ul in initial_find if ul.find_previous_sibling(text=lambda t: any(keyword.lower() in t.lower() if t else False for keyword in keywords))]
+                # Extract all <li> elements from matched <ul>s
+                all_lis = []
+                for ul in matches:
+                    all_lis.extend(ul.find_all('li'))
+                return all_lis
             elif "icims" in platform:
                 return html.find("div", id="jobPageBody")
             elif "taleo" in platform:
@@ -323,7 +335,14 @@ class bing_search():
             elif "trakstar" in platform:
                 return html.find("div", class_="jobdesciption")
             elif "greenhouse" in platform:
-                return html.find_all('li')
+                keywords = ['qualifications', 'requirements', 'skills', 'what we look for']
+                initial_find = html.find_all('ul')
+                matches = [ul for ul in initial_find if ul.find_previous_sibling(text=lambda t: any(keyword.lower() in t.lower() if t else False for keyword in keywords))]
+                # Extract all li elements from matched uls
+                all_lis = []
+                for ul in matches:
+                    all_lis.extend(ul.find_all('li'))
+                return all_lis if all_lis else html.find_all('li')
             elif "successfactors" in platform:
                 return html.find("div", id="qualifications") or html.find("div", class_="job-qualifications")
             elif "workday" in platform:

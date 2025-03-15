@@ -55,7 +55,7 @@ def filter_keywords(df, df_compare, n=5, topic_words = ['coding', 'programming l
         b = './.env'
         c = './data/links_cmp.txt'
         d = './data/keywords_cmp.csv'
-        run_keyword_analyzer(a, b, c, d, e)
+        run_keyword_analyzer(a, b, c, d, e, 0)
     exclude_keywords = pd.read_csv(e)['word']     # First column holds keywords; Second column holds counts
     print(len(exclude_keywords), ' ', len(exclude_keywords.unique()), '; ', len(keywords), ' ', len(keywords.unique())) # TODO: remove. Series + set length should be equal
     exclude_keywords = set(exclude_keywords.unique())
@@ -69,6 +69,23 @@ def filter_keywords(df, df_compare, n=5, topic_words = ['coding', 'programming l
 
     # Sort by descending similarity
     return df
+
+def archive_links(links_to_visit, archived_links):
+    """
+    Appends all contents from links_to_visit.txt to archived_links.txt
+    """
+    try:
+        with open(links_to_visit, 'r') as source:
+            with open(archived_links, 'a') as target:
+                target.write(source.read())
+        os.remove(links_to_visit)
+    except FileNotFoundError:
+        with open(links_to_visit, 'r') as source:
+            with open(archived_links, 'w') as target:
+                target.write(source.read())
+        os.remove(links_to_visit)
+    except Exception as e:
+        print(f"An error occurred while archiving links: {e}")
 
 # Define main analyzer method
 def run_keyword_analyzer(api_input = './data/inputs.txt', env_input = './.env', links_to_visit = './data/links.txt', keywords_out = './data/keywords.csv', analysis_out = './data/analysis.csv', num_links=10): 
@@ -85,22 +102,21 @@ def run_keyword_analyzer(api_input = './data/inputs.txt', env_input = './.env', 
 
     # Format criteria portion of query
     criteria = api.make_api_format(search_terms, exclusions, inclusions)
+    criteria = "(site:" + " OR site:".join(ats_links) + ") AND (" + criteria + ")"
 
     # Comment out if necessary
     # nltk.download("punkt")
     # nltk.download("wordnet")
     # nltk.download("stopwords")
-    nltk.download('averaged_perceptron_tagger_eng')
+    # nltk.download('averaged_perceptron_tagger_eng')
 
-    # # 2. Visit each ATS site
+    # 2. Visit each ATS site
     if(not(os.path.exists(links_to_visit))):
-        for link in ats_links:
-            #TODO: check it's not cut too short
-            query = 'site:' + link + ' ' + criteria
-            
-            # Run query
-            api.get_search_links(query, api_key, links_to_visit, search_engine, engine_id, num_links)
-            print("Done.")
+        api.get_search_links(criteria, api_key, links_to_visit, search_engine, engine_id, num_links)
+    else:
+        archive_file = "archived_links_cmp.txt" if "cmp" in links_to_visit else "archived_links.txt"
+        archive_links(links_to_visit, archive_file)
+        api.get_search_links(criteria, api_key, links_to_visit, search_engine, engine_id, num_links)
 
     # 3. Visit each result link
     with open(links_to_visit) as file:
@@ -112,20 +128,30 @@ def run_keyword_analyzer(api_input = './data/inputs.txt', env_input = './.env', 
             links_arr.append(line.strip())
             n_links += 1
 
-        # Get unique keywords from each visited page
-        keywords_csv = keywords_out
-        if(not(os.path.exists(keywords_csv))):
-            keyword_arrays = []
-            for link in links_arr:
-                keyword_arrays.append(api.process_html(api.get_html(link), platform=link))
+    # Get unique keywords from each visited page
+    keywords_csv = keywords_out
+    if(not(os.path.exists(keywords_csv))):
+        keyword_arrays = []
+        for link in links_arr:
+            keyword_arrays.append(api.process_html(api.get_html(link), platform=link))
 
-            keywords_per_page = pd.DataFrame(keyword_arrays) # TODO: nonetype not iterable; May need to delete first column
-            keywords_per_page.to_csv(keywords_csv) #TODO: delete; keywords saved to avoid excess scraping
+        keywords_per_page = pd.DataFrame(keyword_arrays)
+        keywords_per_page.to_csv(keywords_csv) #TODO: delete; keywords saved to avoid excess scraping
+    else:
+        keyword_df = pd.read_csv(keywords_csv)
+        new_keywords = []
+        for link in links_arr:
+            new_keywords.append(api.process_html(api.get_html(link), platform=link))
 
-        # Get keyword count
-        keywords_per_page = pd.read_csv(keywords_csv) #TODO (!!): inf recursion depth?
-        keywords_df = pd.Series(keywords_per_page.values.ravel()).value_counts()
-        keywords_df = pd.DataFrame({'word': keywords_df.index, 'n': keywords_df.values})
-        if not 'cmp' in api_input:
-            keywords_df = filter_keywords(keywords_df, n_links/5)
-        keywords_df.to_csv(analysis_out) 
+        new_keywords = pd.DataFrame(new_keywords)
+        keywords_per_page = pd.concat([keyword_df, new_keywords], ignore_index=True, axis=0)
+        keywords_per_page.to_csv(keywords_csv)
+
+    # Run keyword analysis on ALL webpages scraped thus far.
+    # Get keyword count
+    keywords_per_page = pd.read_csv(keywords_csv)
+    keywords_df = pd.Series(keywords_per_page.values.ravel()).value_counts()
+    keywords_df = pd.DataFrame({'word': keywords_df.index, 'n': keywords_df.values})
+    if not 'cmp' in api_input:
+        keywords_df = filter_keywords(keywords_df, n_links/5)
+    keywords_df.to_csv(analysis_out) 
