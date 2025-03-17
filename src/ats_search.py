@@ -148,6 +148,7 @@ class google_search():
                 initial_find = html.find_all('ul')
                 matches = [ul for ul in initial_find if ul.find_previous_sibling(string=lambda t: any(keyword.lower() in t.lower() if t else False for keyword in keywords))]
                 # Extract all <li> elements from matched <ul>s
+                #TODO: potential error: links were dead. new ones fetched
                 all_lis = []
                 for ul in matches:
                     all_lis.extend(ul.find_all('li'))
