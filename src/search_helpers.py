@@ -89,40 +89,18 @@ def archive_links(links_to_visit, archived_links):
 
 # Filter links to exclude non-job descriptions
 # n: number of links scraped this session
-def filter_links(file, n):
-    links = pd.read_csv(file)
-    links = links[:, -n]
+def filter_links(links, n):
+    patterns = [
+            r'https://jobs\.lever\.co/[^/]+/\d+',
+            r'https://boards\.greenhouse\.io/[^/]+/jobs/\d+',
+            r'https://[^/]+\.icims\.com/jobs/\d+',
+            r'https://[^/]+\.taleo\.net/careersection/[^/]+/jobdetail\.ftl\?job=\d+',
+            r'https://[^/]+\.myworkdayjobs\.com/[^/]+/job/[^/]+/[^_]+_[a-zA-Z0-9]+',
+            r'https://career\d+\.successfactors\.eu/career\?company=[^&]+&.*?jobId=\d+',
+            r'https://[^/]+\.recruiterbox\.com/(apply|jobs)/\d+'
+        ]
     for link in links:
-        if "lever" in link:
-            # if number exists in link
-        elif "trakstar" in link:
-            return html.find("div", class_="jobdesciption")
-        elif "greenhouse" in link:
-            initial_find = html.find_all('ul')
-            matches = [ul for ul in initial_find if ul.find_previous_sibling(string=lambda t: any(keyword.lower() in t.lower() if t else False for keyword in keywords))]
-            # Extract all <li> elements from matched <ul>s
-            #TODO: potential error: links were dead. new ones fetched
-            all_lis = []
-            for ul in matches:
-                all_lis.extend(ul.find_all('li'))
-            return all_lis
-        elif "successfactors" in link:
-            return html.find("div", id="qualifications") or html.find("div", class_="job-qualifications")
-        elif "workday" in link:
-            initial_find = html.find_all('ul')
-            matches = [ul for ul in initial_find if ul.find_previous_sibling(text=lambda t: any(keyword.lower() in t.lower() if t else False for keyword in keywords))]
-            # Extract all <li> elements from matched <ul>s
-            all_lis = []
-            for ul in matches:
-                all_lis.extend(ul.find_all('li'))
-            return all_lis
-        elif "icims" in link:
-            return html.find("div", id="jobPageBody")
-        elif "taleo" in link:
-            return html.find("div", id="requisitionDescriptionInterface") or html.find("div", class_="requisitionDescription")
-        else:
-            print(f"Platform '{platform}' not supported.")
-            return None
+        return any(re.match(pattern, link) for pattern in patterns)
 
 # Define main analyzer method
 def run_keyword_analyzer(api_input = './data/inputs.txt', env_input = './.env', links_to_visit = './data/links.txt', keywords_out = './data/keywords.csv', analysis_out = './data/analysis.csv', num_links=10): 
@@ -135,7 +113,7 @@ def run_keyword_analyzer(api_input = './data/inputs.txt', env_input = './.env', 
 
     env_input = format_input(env_input)
     api_key, search_engine, engine_id = env_input[0], env_input[1], env_input[2]
-    api = search_wrapper(search_engine)
+    api = search_wrapper(search_engine) #TODO: search wrapper not defined... prob due to circular dependencies
 
     # Format criteria portion of query
     criteria = api.make_api_format(search_terms, exclusions, inclusions)

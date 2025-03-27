@@ -9,6 +9,7 @@ import time
 from googleapiclient.discovery import build
 from sentence_transformers import SentenceTransformer, util # pip install -U sentence-transformers
 from nltk.stem import WordNetLemmatizer as wnLemmatizer
+from search_helpers import filter_links
 
 # API-dependent functions
 # Return correct search object for respective engine
@@ -68,6 +69,7 @@ class google_search():
                     num_urls += 1
                     links += res['link'] + '\n'
                 
+                links = filter_links(links)
                 with open(target_file, "w") as f: # Create fresh links file for each run
                     f.write(links)
 
@@ -233,6 +235,8 @@ class google_search():
             inclusion_str = inclusions
 
         search_term_str = '("' + '" OR "'.join(f'{term}' for term in search_terms) + '")'
+        # Add link filter in the search
+        search_term_str += ' inurl:[\\d]'
 
         return ' '.join([exclusion_str, inclusion_str, search_term_str])
 
@@ -282,6 +286,7 @@ class bing_search():
                     num_urls += 1
                     links += res['url'] + '\n'
                 
+                links = filter_links(links)
                 with open(target_file, "a") as f:
                     f.write(links)
 
