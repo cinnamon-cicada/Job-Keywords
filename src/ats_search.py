@@ -9,7 +9,6 @@ import time
 from googleapiclient.discovery import build
 from sentence_transformers import SentenceTransformer, util # pip install -U sentence-transformers
 from nltk.stem import WordNetLemmatizer as wnLemmatizer
-from search_helpers import filter_links
 
 # API-dependent functions
 # Return correct search object for respective engine

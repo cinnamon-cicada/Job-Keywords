@@ -10,83 +10,6 @@ from sentence_transformers import SentenceTransformer, util # pip install -U sen
 import nltk
 
 # API-independent functions
-def format_input(file):
-    """
-    Parses an input file and extracts formatted content.
-
-    Args:
-        file (str): Path to the input file.
-
-    Returns:
-        list: A list containing parsed inputs, each entry representing a line.
-    """
-    formatted = []
-
-    with open(file) as f:
-        for line in f:
-            if line[0] != '#':
-                # More than one input
-                if line.count(',') > 0:
-                    formatted.append(line.split(': ')[1].split(','))
-                    for i in range(len(formatted[-1])):
-                        formatted[-1][i] = formatted[-1][i].strip()
-                # One input
-                else:
-                    formatted.append(line.split(': ')[1].strip())
-
-    return formatted
-
-# Filter words only for those related to topic_words
-# NOTE: wn similarity functions return !=0 ONLY for solid IS-A relationships
-
-'''Alternative ideas:
-- Exclude keywords found in non-CS job descriptions + TF-IDF
-- word embedding library/methods -- what's so different between that and the below??
-
-'''
-def filter_keywords(df, df_compare, n=5, topic_words = ['coding', 'programming language', 'computer science', 'software', 'hardware', 'agile'], sim_threshold=0.4):
-    df[df.columns[1]] = df[df.columns[1]].astype(int)
-    keywords = df[df.n > n].iloc[:, 0] # Remove uncommon words
-
-    # Get keywords to compare to + exclude
-    e = './data/analysis_cmp.csv'
-    if(not(os.path.exists(e))):
-        a = './data/inputs_cmp.txt'
-        b = './.env'
-        c = './data/links_cmp.txt'
-        d = './data/keywords_cmp.csv'
-        run_keyword_analyzer(a, b, c, d, e, 0)
-    exclude_keywords = pd.read_csv(e)['word']     # First column holds keywords; Second column holds counts
-    print(len(exclude_keywords), ' ', len(exclude_keywords.unique()), '; ', len(keywords), ' ', len(keywords.unique())) # TODO: remove. Series + set length should be equal
-    exclude_keywords = set(exclude_keywords.unique())
-    keywords = set(keywords.unique())
-
-    # Exclude non-target keywords
-    # TODO: try tf-idf
-    kept_keywords = keywords - exclude_keywords
-    df = df[df.word.isin(kept_keywords)]
-    df.sort_values(by='n', ascending=False)
-
-    # Sort by descending similarity
-    return df
-
-def archive_links(links_to_visit, archived_links):
-    """
-    Appends all contents from links_to_visit.txt to archived_links.txt
-    """
-    try:
-        with open(links_to_visit, 'r') as source:
-            with open(archived_links, 'a') as target:
-                target.write(source.read())
-        os.remove(links_to_visit)
-    except FileNotFoundError:
-        with open(links_to_visit, 'r') as source:
-            with open(archived_links, 'w') as target:
-                target.write(source.read())
-        os.remove(links_to_visit)
-    except Exception as e:
-        print(f"An error occurred while archiving links: {e}")
-
 # Filter links to exclude non-job descriptions
 # n: number of links scraped this session
 def filter_links(links, n):
@@ -170,3 +93,80 @@ def run_keyword_analyzer(api_input = './data/inputs.txt', env_input = './.env', 
     if not 'cmp' in api_input:
         keywords_df = filter_keywords(keywords_df, n_links/5)
     keywords_df.to_csv(analysis_out) 
+
+def format_input(file):
+    """
+    Parses an input file and extracts formatted content.
+
+    Args:
+        file (str): Path to the input file.
+
+    Returns:
+        list: A list containing parsed inputs, each entry representing a line.
+    """
+    formatted = []
+
+    with open(file) as f:
+        for line in f:
+            if line[0] != '#':
+                # More than one input
+                if line.count(',') > 0:
+                    formatted.append(line.split(': ')[1].split(','))
+                    for i in range(len(formatted[-1])):
+                        formatted[-1][i] = formatted[-1][i].strip()
+                # One input
+                else:
+                    formatted.append(line.split(': ')[1].strip())
+
+    return formatted
+
+# Filter words only for those related to topic_words
+# NOTE: wn similarity functions return !=0 ONLY for solid IS-A relationships
+
+'''Alternative ideas:
+- Exclude keywords found in non-CS job descriptions + TF-IDF
+- word embedding library/methods -- what's so different between that and the below??
+
+'''
+def filter_keywords(df, df_compare, n=5, topic_words = ['coding', 'programming language', 'computer science', 'software', 'hardware', 'agile'], sim_threshold=0.4):
+    df[df.columns[1]] = df[df.columns[1]].astype(int)
+    keywords = df[df.n > n].iloc[:, 0] # Remove uncommon words
+
+    # Get keywords to compare to + exclude
+    e = './data/analysis_cmp.csv'
+    if(not(os.path.exists(e))):
+        a = './data/inputs_cmp.txt'
+        b = './.env'
+        c = './data/links_cmp.txt'
+        d = './data/keywords_cmp.csv'
+        run_keyword_analyzer(a, b, c, d, e, 0)
+    exclude_keywords = pd.read_csv(e)['word']     # First column holds keywords; Second column holds counts
+    print(len(exclude_keywords), ' ', len(exclude_keywords.unique()), '; ', len(keywords), ' ', len(keywords.unique())) # TODO: remove. Series + set length should be equal
+    exclude_keywords = set(exclude_keywords.unique())
+    keywords = set(keywords.unique())
+
+    # Exclude non-target keywords
+    # TODO: try tf-idf
+    kept_keywords = keywords - exclude_keywords
+    df = df[df.word.isin(kept_keywords)]
+    df.sort_values(by='n', ascending=False)
+
+    # Sort by descending similarity #TODO: testing why 0 links
+    return df
+
+def archive_links(links_to_visit, archived_links):
+    """
+    Appends all contents from links_to_visit.txt to archived_links.txt
+    """
+    try:
+        with open(links_to_visit, 'r') as source:
+            with open(archived_links, 'a') as target:
+                target.write(source.read())
+        os.remove(links_to_visit)
+    except FileNotFoundError:
+        with open(links_to_visit, 'r') as source:
+            with open(archived_links, 'w') as target:
+                target.write(source.read())
+        os.remove(links_to_visit)
+    except Exception as e:
+        print(f"An error occurred while archiving links: {e}")
