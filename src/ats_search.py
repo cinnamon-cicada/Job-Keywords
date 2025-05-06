@@ -10,7 +10,7 @@ from googleapiclient.discovery import build
 from sentence_transformers import SentenceTransformer, util # pip install -U sentence-transformers
 from nltk.stem import WordNetLemmatizer as wnLemmatizer
 
-# API-dependent functions
+## API-dependent functions
 # Return correct search object for respective engine
 def search_wrapper(engine):
     if 'bing' in engine:
@@ -18,7 +18,7 @@ def search_wrapper(engine):
     else: 
         return google_search()
 
-# Google API-dependent functions
+## Google API-dependent functions
 class google_search():
     def __init__(self):
         pass
@@ -68,7 +68,8 @@ class google_search():
                     num_urls += 1
                     links += res['link'] + '\n'
                 
-                links = filter_links(links)
+                links = '\n'.join(filter_links(links))
+                
                 with open(target_file, "w") as f: # Create fresh links file for each run
                     f.write(links)
 
@@ -169,7 +170,7 @@ class google_search():
             elif "taleo" in platform:
                 return html.find("div", id="requisitionDescriptionInterface") or html.find("div", class_="requisitionDescription")
             else:
-                print(f"Platform '{platform}' not supported.")
+                print(f"Platform '{platform}' not supported.") # Hardcoded skills section identifier may also not exist
                 return None
         except Exception as e:
             print(f"Error extracting qualifications for {platform}: {e}")
@@ -234,11 +235,10 @@ class google_search():
             inclusion_str = inclusions
 
         search_term_str = '("' + '" OR "'.join(f'{term}' for term in search_terms) + '")'
-        # Add link filter in the search
-        search_term_str += ' inurl:[\\d]'
 
         return ' '.join([exclusion_str, inclusion_str, search_term_str])
 
+## Bing API-dependent functions
 class bing_search():
     def __init__(self):
         pass
@@ -283,9 +283,10 @@ class bing_search():
                 result = requests.get(endpoint, headers=headers, params=params)
                 for res in result['webPages']['value']:
                     num_urls += 1
-                    links += res['url'] + '\n'
+                    links = links.append(res['url'])
                 
-                links = filter_links(links)
+                links = '\n'.join(filter_links(links))
+
                 with open(target_file, "a") as f:
                     f.write(links)
 
@@ -434,3 +435,22 @@ class bing_search():
             print("'section' variable was empty.")
             return None
     # site:job-boards.greenhouse.io ("swe" OR "software")  -"careers" -"roles" -jobs responseFilter=Webpages
+
+
+## Helpers
+# Filter links to exclude non-job descriptions
+# n: number of links scraped this session
+def filter_links(links):
+    patterns = [
+            r'https://jobs\.lever\.co/[^/]+/\d+',
+            r'https://boards\.greenhouse\.io/[^/]+/jobs/\d+',
+            r'https://[^/]+\.icims\.com/jobs/\d+',
+            r'https://[^/]+\.taleo\.net/careersection/[^/]+/jobdetail\.ftl\?job=\d+',
+            r'https://[^/]+\.myworkdayjobs\.com/[^/]+/job/[^/]+/[^_]+_[a-zA-Z0-9]+',
+            r'https://career\d+\.successfactors\.eu/career\?company=[^&]+&.*?jobId=\d+',
+            r'https://[^/]+\.recruiterbox\.com/(apply|jobs)/\d+'
+        ]
+    valid_links = []
+    for link in links:
+        valid_links.append(any(re.match(pattern, link) for pattern in patterns))
+    return valid_links

@@ -10,20 +10,6 @@ from sentence_transformers import SentenceTransformer, util # pip install -U sen
 import nltk
 
 # API-independent functions
-# Filter links to exclude non-job descriptions
-# n: number of links scraped this session
-def filter_links(links, n):
-    patterns = [
-            r'https://jobs\.lever\.co/[^/]+/\d+',
-            r'https://boards\.greenhouse\.io/[^/]+/jobs/\d+',
-            r'https://[^/]+\.icims\.com/jobs/\d+',
-            r'https://[^/]+\.taleo\.net/careersection/[^/]+/jobdetail\.ftl\?job=\d+',
-            r'https://[^/]+\.myworkdayjobs\.com/[^/]+/job/[^/]+/[^_]+_[a-zA-Z0-9]+',
-            r'https://career\d+\.successfactors\.eu/career\?company=[^&]+&.*?jobId=\d+',
-            r'https://[^/]+\.recruiterbox\.com/(apply|jobs)/\d+'
-        ]
-    for link in links:
-        return any(re.match(pattern, link) for pattern in patterns)
 
 # Define main analyzer method
 def run_keyword_analyzer(api_input = './data/inputs.txt', env_input = './.env', links_to_visit = './data/links.txt', keywords_out = './data/keywords.csv', analysis_out = './data/analysis.csv', num_links=10): 
@@ -151,7 +137,7 @@ def filter_keywords(df, df_compare, n=5, topic_words = ['coding', 'programming l
     df = df[df.word.isin(kept_keywords)]
     df.sort_values(by='n', ascending=False)
 
-    # Sort by descending similarity #TODO: testing why 0 links
+    # Sort by descending similarity
     return df
 
 def archive_links(links_to_visit, archived_links):
