@@ -9,6 +9,9 @@ import time
 from googleapiclient.discovery import build
 from sentence_transformers import SentenceTransformer, util # pip install -U sentence-transformers
 from nltk.stem import WordNetLemmatizer as wnLemmatizer
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+
 
 ## API-dependent functions
 # Return correct search object for respective engine
@@ -38,7 +41,6 @@ class google_search():
         """
         num_urls = 0
         next_page_start = 1
-        links = ''
 
         service = build(
             "customsearch", "v1", developerKey=api
@@ -51,6 +53,7 @@ class google_search():
         } #TODO: may be unnecessary
         
         while num_urls < num_results:
+            links = []
             try:
                 result = service.cse().list(
                     q=query,
@@ -66,7 +69,7 @@ class google_search():
                 
                 for res in result.get('items', []):
                     num_urls += 1
-                    links += res['link'] + '\n'
+                    links.append(res['link'])
                 
                 links = '\n'.join(filter_links(links))
                 
@@ -93,11 +96,40 @@ class google_search():
             BeautifulSoup object or str: Parsed HTML or an error message.
         """
         try:
-            headers = {'User-Agent': 'Mozilla/5.0'}
-            response = requests.get(url, headers=headers)
-            response.raise_for_status()
+            soupArray = [] # Array to store HTML of each visited job listing
+            
+            # Set up scraper
+            driver = webdriver.Chrome() 
+            driver.get(url)
 
-            return BeautifulSoup(response.text, 'html.parser')
+            # Find all <a> elements with an href attribute
+            a_tags = driver.find_elements(By.XPATH, "//a[@href]")
+
+            for a_tag in a_tags:
+                link_text = a_tag.text
+                link_url = a_tag.get_attribute('href')
+
+                # Your condition here (replace with your logic)
+                if similar(link_text, ):  # Example: if link_text is not empty
+                    print(f"Clicking: {link_text} ({link_url})")
+                    a_tag.click()
+                    time.sleep(2)  # Wait for the page to load or for any JS to execute
+
+                    # Optionally, go back to the original page to continue with the next link
+                    driver.back()
+                    time.sleep(1)
+
+                    # Re-find all <a> elements after navigating back, as the DOM may have changed
+                    a_tags = driver.find_elements(By.XPATH, "//a[@href]")
+
+            # Close the browser when done
+            driver.quit()
+
+            # response is a requests.models.Response object
+            soupArray.append(BeautifulSoup(response.text, 'html.parser'))
+
+
+            return soupArray
         
         except requests.exceptions.RequestException as e:
             return f"An error occurred: {e}"
@@ -258,7 +290,6 @@ class bing_search():
         """
         num_urls = 0
         next_page_start = 0
-        links = ''
         limit_reached = False
         query = urlencode(query)
 
@@ -271,9 +302,10 @@ class bing_search():
         endpoint += '/v7.0/search'
 
         while num_urls < num_results and not limit_reached:
+            links = []
             params = {
                     "q": query,
-                    "count": 50,          # Number of results per request
+                    "count": min(50, num_results - num_urls),          # Number of results per request
                     "offset": next_page_start,          # Pagination offset
                     "mkt": "en-US",       # Market/language
                     "responseFilter": "Webpages"
@@ -436,10 +468,79 @@ class bing_search():
             return None
     # site:job-boards.greenhouse.io ("swe" OR "software")  -"careers" -"roles" -jobs responseFilter=Webpages
 
+## Classes for Platform-Specific Functions
+from bs4 import BeautifulSoup
+
+class LeverPlatform:
+    @staticmethod
+    def extract_skills_section(html: BeautifulSoup):
+        return html.find("div", class_="section") or html.find("div", class_="posting-requirements")
+
+class TrakstarPlatform:
+    @staticmethod
+    def extract_skills_section(html: BeautifulSoup):
+        return html.find("div", class_="jobdesciption")
+
+class GreenhousePlatform:
+    @staticmethod
+    def extract_skills_section(html: BeautifulSoup):
+        keywords = ['qualification', 'requirement', 'skill', 'what we look for', "work on", "working on"]
+        initial_find = html.find_all('ul')
+        matches = [ul for ul in initial_find if ul.find_previous_sibling(string=lambda t: any(keyword.lower() in t.lower() if t else False for keyword in keywords))]
+        all_lis = []
+        for ul in matches:
+            all_lis.extend(ul.find_all('li'))
+        return all_lis
+
+class SuccessfactorsPlatform:
+    @staticmethod
+    def extract_skills_section(html: BeautifulSoup):
+        return html.find("div", id="qualifications") or html.find("div", class_="job-qualifications")
+
+class WorkdayPlatform:
+    @staticmethod
+    def extract_skills_section(html: BeautifulSoup):
+        keywords = ['qualification', 'requirement', 'skill', 'what we look for', "work on", "working on"]
+        initial_find = html.find_all('ul')
+        matches = [ul for ul in initial_find if ul.find_previous_sibling(text=lambda t: any(keyword.lower() in t.lower() if t else False for keyword in keywords))]
+        all_lis = []
+        for ul in matches:
+            all_lis.extend(ul.find_all('li'))
+        return all_lis
+
+class IcimsPlatform:
+    @staticmethod
+    def extract_skills_section(html: BeautifulSoup):
+        return html.find("div", id="jobPageBody")
+
+class TaleoPlatform:
+    @staticmethod
+    def extract_skills_section(html: BeautifulSoup):
+        return html.find("div", id="requisitionDescriptionInterface") or html.find("div", class_="requisitionDescription") 
 
 ## Helpers
+
+# Wrapper method to allow uniform functionality across different platforms
+def platformWrapper(link):
+    PLATFORM_CLASSES = {
+        "lever": LeverPlatform,
+        "trakstar": TrakstarPlatform,
+        "greenhouse": GreenhousePlatform,
+        "successfactors": SuccessfactorsPlatform,
+        "workday": WorkdayPlatform,
+        "icims": IcimsPlatform,
+        "taleo": TaleoPlatform,
+    }
+
+    link_lower = link.lower()
+    for key, cls in PLATFORM_CLASSES.items():
+        if key in link_lower:
+            return cls()  # Return an instance of the matched class
+    return None
+
 # Filter links to exclude non-job descriptions
 # n: number of links scraped this session
+# @return array of links (str)
 def filter_links(links):
     patterns = [
             r'https://jobs\.lever\.co/[^/]+/\d+',
@@ -451,6 +552,8 @@ def filter_links(links):
             r'https://[^/]+\.recruiterbox\.com/(apply|jobs)/\d+'
         ]
     valid_links = []
+
     for link in links:
-        valid_links.append(any(re.match(pattern, link) for pattern in patterns))
+        if any(re.match(pattern, link) for pattern in patterns):
+            valid_links.append(link)
     return valid_links

@@ -57,15 +57,16 @@ def run_keyword_analyzer(api_input = './data/inputs.txt', env_input = './.env', 
     if(not(os.path.exists(keywords_csv))):
         keyword_arrays = []
         for link in links_arr:
-            keyword_arrays.append(api.process_html(api.get_html(link), platform=link))
+            target_words = search_terms + ", " + inclusions
+            keyword_arrays.append(api.process_html(api.get_html(link, ), platform=link))
 
         keywords_per_page = pd.DataFrame(keyword_arrays)
         keywords_per_page.to_csv(keywords_csv) #TODO: delete; keywords saved to avoid excess scraping
     else:
         keyword_df = pd.read_csv(keywords_csv)
         new_keywords = []
-        for link in links_arr:
-            new_keywords.append(api.process_html(api.get_html(link), platform=link))
+        for link in links_arr: #TODO: cut off job ID portion, turn to set
+            new_keywords.extend(api.process_html(api.get_html(link), platform=link))
 
         new_keywords = pd.DataFrame(new_keywords)
         keywords_per_page = pd.concat([keyword_df, new_keywords], ignore_index=True, axis=0)
